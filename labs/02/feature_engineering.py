@@ -23,6 +23,9 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, np.ndarray]:
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
+    print(dataset.data[0])
+    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(dataset.data, dataset.target, test_size=args.test_size, random_state=args.seed)
+    
 
     # TODO: Process the input columns in the following way:
     #
@@ -40,6 +43,19 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, np.ndarray]:
     # In the output, first there should be all the one-hot categorical features,
     # and then the real-valued features. To process different dataset columns
     # differently, you can use `sklearn.compose.ColumnTransformer`.
+    cols = []
+    encoder = sklearn.preprocessing.OneHotEncoder(sparse_output=False, handle_unknown="ignore")
+    scaler = sklearn.preprocessing.StandardScaler()
+    
+    for col in range(x_train.shape[1]):
+        column = x_train[:, col].reshape(-1,1)
+        if np.all(np.equal(np.mod(column, 1), 0)):  # Only integers           
+            column = encoder.fit_transform(column)
+        else:           
+            column = scaler.fit_transform(column)
+        cols.append(column)
+
+
 
     # TODO: To the current features, append polynomial features of order 2.
     # If the input values are `[a, b, c, d]`, you should append
