@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# f5419161-0138-4909-8252-ba9794a63e53
+# 964bdfc8-60b0-4398-b837-7c2520532d17
+# 4b50a6fb-a4a6-4b30-9879-0b671f941a72
 import argparse
 
 import numpy as np
@@ -18,7 +21,16 @@ parser.add_argument("--seed", default=42, type=int, help="Random seed")
 parser.add_argument("--test_size", default=0.5, type=lambda x: int(x) if x.isdigit() else float(x), help="Test size")
 # If you add more arguments, ReCodEx will keep them with your default values.
 
-
+def compute_acc_loss(W,TrX,TrY,TeX,TeY):
+    train_pred = 1 / (1+ np.pow(np.e,-(TrX @ W)))
+    test_pred = 1 / (1+ np.pow(np.e,-(TeX @ W)))
+    train_cls_probs = np.where(TrY == 1,train_pred,1-train_pred)
+    train_acc = np.mean((train_pred >= 0.5) == TrY)
+    test_acc = np.mean((test_pred >= 0.5) == TeY)
+    test_loss = -np.mean(np.log(np.where(TeY == 1, test_pred, 1- test_pred)))
+    train_loss = -np.mean(np.log(train_cls_probs))
+    return train_acc, train_loss, test_acc, test_loss
+    
 def main(args: argparse.Namespace) -> tuple[np.ndarray, list[tuple[float, float]]]:
     # Create a random generator with a given seed.
     generator = np.random.RandomState(args.seed)
@@ -29,25 +41,36 @@ def main(args: argparse.Namespace) -> tuple[np.ndarray, list[tuple[float, float]
 
     # TODO: Append a constant feature with value 1 to the end of every input data.
     # Then we do not need to explicitly represent bias - it becomes the last weight.
-
+    data = np.append(data,np.ones(data.shape[0])[:,np.newaxis],1)
     # TODO: Split the dataset into a train set and a test set.
     # Use `sklearn.model_selection.train_test_split` method call, passing
     # arguments `test_size=args.test_size, random_state=args.seed`.
-
+    train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(data,target,test_size=args.test_size,random_state=args.seed)
     # Generate initial logistic regression weights.
     weights = generator.uniform(size=train_data.shape[1], low=-0.1, high=0.1)
-
     for epoch in range(args.epochs):
         permutation = generator.permutation(train_data.shape[0])
 
         # TODO: Process the data in the order of `permutation`. For every
         # `args.batch_size` of them, average their gradient, and update the weights.
         # You can assume that `args.batch_size` exactly divides `train_data.shape[0]`.
-
+        for i in range(0,permutation.shape[0],args.batch_size):
+            idxes = permutation[i:i+args.batch_size]
+            batch_X = train_data[idxes]
+            batch_t = train_target[idxes]
+            y = batch_X @ weights
+            sig_pred = 1 / (1+ np.pow(np.e,-y))
+            g = (sig_pred - batch_t)[:,np.newaxis] * batch_X - batch_X
+            grad = np.sum(g,0) / args.batch_size
+            G = (batch_X.T @ (sig_pred - batch_t)) / args.batch_size
+            weights -= args.learning_rate * G
+            
         # TODO: After the SGD epoch, measure the average loss and accuracy for both the
         # train set and the test set. The loss is the average MLE loss (i.e., the
         # negative log-likelihood, or cross-entropy loss, or KL loss) per example.
-        train_accuracy, train_loss, test_accuracy, test_loss = ...
+        train_accuracy, train_loss, test_accuracy, test_loss = compute_acc_loss(
+            weights,train_data,train_target,test_data,test_target
+        )
 
         print("After epoch {}: train loss {:.4f} acc {:.1f}%, test loss {:.4f} acc {:.1f}%".format(
             epoch + 1, train_loss, 100 * train_accuracy, test_loss, 100 * test_accuracy))
