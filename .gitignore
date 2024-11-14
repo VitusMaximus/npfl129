@@ -1,0 +1,5 @@
+VENV_DIR
+*.exe
+*.tmp
+__pycache__
+.vscode
