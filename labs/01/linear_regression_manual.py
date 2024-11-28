@@ -21,13 +21,8 @@ def main(args: argparse.Namespace) -> float:
 
     # If you want to learn about the dataset, you can print some information
     # about it using `print(dataset.DESCR)`.
-<<<<<<< HEAD
-    print(dataset.DESCR)
-    # TODO: Append a constant feature with value 1 to the end of every input data.
-=======
 
     # TODO: Append a constant feature with value 1 to the end of all input data.
->>>>>>> f81293b4ebc6da14ec744db2bf880e8158db0ea1
     # Then we do not need to explicitly represent bias - it becomes the last weight.
     new_data = np.zeros((dataset.data.shape[0], dataset.data.shape[1]+1))
     new_data[:, -1] = 1

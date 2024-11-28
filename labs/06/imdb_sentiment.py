@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# f5419161-0138-4909-8252-ba9794a63e53
+# 964bdfc8-60b0-4398-b837-7c2520532d17
+# 4b50a6fb-a4a6-4b30-9879-0b671f941a72
 import argparse
 import lzma
 import os
@@ -12,6 +15,8 @@ import numpy.typing as npt
 import sklearn.feature_extraction
 import sklearn.metrics
 import sklearn.model_selection
+import sklearn.neural_network
+import re
 
 parser = argparse.ArgumentParser()
 # These arguments will be set appropriately by ReCodEx, even if you change them.
@@ -82,14 +87,19 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
         # embeddings: averaging, max pooling, etc. You can also try to exclude
         # words that do not contribute much to the meaning of the sentence (stop
         # words). See `sklearn.feature_extraction._stop_words.ENGLISH_STOP_WORDS`.
-        train_as_vectors = ...
+        train_as_vectors = text_to_vectors(train.data, word_embeddings)
+            #spl = np.array_split(np.array(vectors), 10)
+            #features = np.mean(np.array_split(np.array(vectors), 10), axis=1)
+
+        
 
         train_x, validation_x, train_y, validation_y = sklearn.model_selection.train_test_split(
             train_as_vectors, train.target, test_size=0.25, random_state=args.seed)
 
         print("Training.", file=sys.stderr)
         # TODO: Train a model of your choice on the given data.
-        model = ...
+        model = sklearn.neural_network.MLPClassifier((300, 300), verbose=True, max_iter=26)
+        model.fit(train_x, train_y)
 
         print("Evaluation.", file=sys.stderr)
         validation_predictions = model.predict(validation_x)
@@ -109,15 +119,32 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
 
         # TODO: Start by preprocessing the test data, ideally using the same
         # code as during training.
-        test_as_vectors = ...
+        test_as_vectors = text_to_vectors(test.data, word_embeddings)
 
         # TODO: Generate `predictions` with the test set predictions, either
         # as a Python list or a NumPy array.
-        predictions = ...
+        predictions = model.predict(test_as_vectors)
 
         return predictions
+
+
+
+
+def text_to_vectors(data, word_embeddings):
+    X_as_vectors = np.zeros((len(data), 300))
+    for i, text in enumerate(data):
+        split = text.split()
+        vectors = [] 
+        for word in split:
+            if word in word_embeddings.keys():
+                vectors.append(word_embeddings[word])
+        X_as_vectors[i, :] = np.mean(vectors, axis=0)
+    return X_as_vectors
+
+
 
 
 if __name__ == "__main__":
     main_args = parser.parse_args([] if "__file__" not in globals() else None)
     main(main_args)
+
