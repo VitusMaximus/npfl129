@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# f5419161-0138-4909-8252-ba9794a63e53
+# 964bdfc8-60b0-4398-b837-7c2520532d17
+# 4b50a6fb-a4a6-4b30-9879-0b671f941a72
 import argparse
 import lzma
 import os
@@ -9,6 +12,16 @@ import urllib.request
 
 import numpy as np
 import numpy.typing as npt
+
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
 
 parser = argparse.ArgumentParser()
 # These arguments will be set appropriately by ReCodEx, even if you change them.
@@ -47,10 +60,21 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
         # We are training a model.
         np.random.seed(args.seed)
         train = Dataset()
-
+        X_train, X_test, y_train, y_test = train_test_split(train.data, train.target, test_size=0.1, random_state=args.seed)
         # TODO: Train a model on the given dataset and store it in `model`.
-        model = ...
+        model = Pipeline([
+            ('vect-tfidf', TfidfVectorizer(ngram_range=(1,2) ,stop_words='english', min_df=1)),
+            #('classifier', MLPClassifier(hidden_layer_sizes=(100, 50), verbose=True, early_stopping=True, validation_fraction=0.1, n_iter_no_change=10)) #64.3
+            #('forest', RandomForestClassifier(verbose=1))
+            #('svm', SVC(kernel='linear', verbose=True, C=0.5))
+            #('lr', LogisticRegression(verbose=True))    #63.4
+            ('bayes', MultinomialNB(alpha=0.5))  #67.3 (min_dif=1)
+        ])
 
+        model.fit(X_train, y_train)
+        pred = model.predict(X_test)
+        accuracy = f1_score(y_test, pred)
+        print("F1-score: ", accuracy)
         # Serialize the model.
         with lzma.open(args.model_path, "wb") as model_file:
             pickle.dump(model, model_file)
@@ -64,7 +88,7 @@ def main(args: argparse.Namespace) -> Optional[npt.ArrayLike]:
 
         # TODO: Generate `predictions` with the test set predictions, either
         # as a Python list or a NumPy array.
-        predictions = ...
+        predictions = model.predict(test.data)
 
         return predictions
 

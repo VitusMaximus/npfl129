@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# f5419161-0138-4909-8252-ba9794a63e53
+# 964bdfc8-60b0-4398-b837-7c2520532d17
+# 4b50a6fb-a4a6-4b30-9879-0b671f941a72
 import argparse
 import dataclasses
 
@@ -51,11 +54,19 @@ def main(args: argparse.Namespace) -> tuple[float, float]:
         sentences = generator.choice(data.sentences, size=len(data.sentences), replace=True)
 
         # TODO: Append the average of human ratings of `sentences` to `human_ratings`.
-        human_ratings.append(...)
+        human_ratings.append(np.mean([sentence.human_rating for sentence in sentences]))
 
         # TODO: Compute TP, FP, FN counts of predicted edits in `sentences`
         # and append them to `predictions`.
-        predictions.append(...)
+        TP = 0
+        FP = 0
+        FN = 0
+        for sentence in sentences:
+            TP += sentence.predicted_correct
+            FP += sentence.predicted_edits - sentence.predicted_correct
+            FN += sentence.gold_edits - sentence.predicted_correct
+            
+        predictions.append((TP, FP, FN))
 
     # Compute Pearson correlation between F_beta score and human ratings
     # for betas between 0 and 2.
@@ -67,7 +78,13 @@ def main(args: argparse.Namespace) -> tuple[float, float]:
         # the counts in `predictions` and then manually compute the Pearson
         # correlation between the computed scores and `human_ratings`. Append
         # the result to `correlations`.
-        correlations.append(...)
+        F_betas = []
+        for TP, FP, FN in predictions:
+            F_betas.append((TP + beta**2 * TP) / (TP + FP + beta**2 * (TP + FN)))
+        F_mean = np.mean(F_betas)
+        hr_mean = np.mean(human_ratings)
+        r = np.sum((F_betas - F_mean) * (human_ratings - hr_mean)) / (np.sqrt(np.sum((F_betas - F_mean)**2)) * np.sqrt(np.sum((human_ratings - hr_mean)**2)))
+        correlations.append(r)
 
     if args.plot:
         import matplotlib.pyplot as plt
@@ -78,7 +95,8 @@ def main(args: argparse.Namespace) -> tuple[float, float]:
 
     # TODO: Assign the highest correlation to `best_correlation` and
     # store corresponding beta to `best_beta`.
-    best_beta, best_correlation = ...
+    best_idx = np.argmax(correlations)
+    best_beta, best_correlation = betas[best_idx], correlations[best_idx]
 
     return best_beta, best_correlation
 
